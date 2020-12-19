@@ -64,7 +64,7 @@ $(function() {
                                         var ncount= parseInt(this.value);
                                         self.changecount($(this).data("index"),ncount);
                                     }
-                                });
+								});
 							} else {
 								var time = file.time / 60;
 								var suffix = " mins";

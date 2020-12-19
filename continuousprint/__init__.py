@@ -23,6 +23,7 @@ class ContinuousprintPlugin(octoprint.plugin.SettingsPlugin,
 	def get_settings_defaults(self):
 		return dict(
 			cp_queue="[]",
+			cp_queue_start_script="G28",
 			cp_bed_clearing_script="M17 ;enable steppers\nM91 ; Set relative for lift\nG0 Z10 ; lift z by 10\nG90 ;back to absolute positioning\nM190 R25 ; set bed to 25 for cooldown\nG4 S90 ; wait for temp stabalisation\nM190 R30 ;verify temp below threshold\nG0 X200 Y235 ;move to back corner\nG0 X110 Y235 ;move to mid bed aft\nG0 Z1v ;come down to 1MM from bed\nG0 Y0 ;wipe forward\nG0 Y235 ;wipe aft\nG28 ; home",
 			cp_queue_finished="M18 ; disable steppers\nM104 T0 S0 ; extruder heater off\nM140 S0 ; heated bed heater off\nM300 S880 P300 ; beep to show its finished"
 		)
@@ -70,10 +71,10 @@ class ContinuousprintPlugin(octoprint.plugin.SettingsPlugin,
 		if payload["path"]== item["path"] and item["count"] > 0:
 			
 			# check to see if loop count is set. If it is increment times run.
-				if "times_run" not in item:
-					item["times_run"] = 0
+			if "times_run" not in item:
+				item["times_run"] = 0
 
-				item["times_run"] += 1
+			item["times_run"] += 1
 
 			# On complete_print, remove the item from the queue 
 			# if the item has run for loop count  or no loop count is specified and 
@@ -234,6 +235,8 @@ class ContinuousprintPlugin(octoprint.plugin.SettingsPlugin,
 		self.print_history = []
 		self.paused = False
 		self.enabled = True # Set enabled to true
+		cp_queue_start_script = self._settings.get(["cp_queue_start_script"]).split("\n")
+		self._printer.commands(self.parse_gcode(cp_queue_start_script))
 		self.start_next_print()
 		return flask.make_response("success", 200)
 	
@@ -250,6 +253,7 @@ class ContinuousprintPlugin(octoprint.plugin.SettingsPlugin,
 			cp_enabled=self.enabled,
 			cp_bed_clearing_script=self._settings.get(["cp_bed_clearing_script"]),
 			cp_queue_finished=self._settings.get(["cp_queue_finished"]),
+			cp_queue_start_script=self._settings.get(["cp_queue_start_script"]),
 			cp_paused=self.paused
 		)
 	def get_template_configs(self):
